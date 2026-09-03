@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1e1e1e">
+<title>Studio Rysunku Pro - Hierarchia Lassa & Warstwy</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#141414;color:#ddd;font:13px system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;user-select:none;overscroll-behavior:none}
+body{height:100dvh;display:flex;flex-direction:column;position:relative}
+button,label,input,select{font:inherit;color:inherit}
+
+.top-bar{height:44px;background:#222;border-bottom:1px solid #333;display:flex;align-items:center;justify-style:space-between;padding:0 12px;z-index:100;flex-shrink:0}
+.top-title{font-weight:bold;font-size:14px;color:#007acc;display:flex;align-items:center;gap:6px}
+.top-actions{display:flex;gap:6px;align-items:center}
+.btn-icon{width:34px;height:34px;border-radius:6px;border:none;background:#2d2d2d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
+.btn-icon:hover{background:#3a3a3a}
+.mode-toggle{background:#007acc15;border:1px solid #007acc;color:#007acc;padding:4px 10px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:12px}
+
+.app-container{flex:1;display:flex;position:relative;overflow:hidden;z-index:1}
+
+.workspace{flex:1;position:relative;overflow:hidden;background:#0d0d0d;touch-action:none;display:flex;align-items:center;justify-style:center;cursor:default}
+.workspace.is-panning{cursor:grab}
+.workspace.is-panning:active{cursor:grabbing}
+canvas{display:block;box-shadow:0 0 25px #0009;background:#1a1a1a;transform-origin:0 0;position:absolute;left:0;top:0;will-change:transform}
+.empty-msg{position:absolute;color:#666;text-align:center;pointer-events:none;font-size:13px;padding:20px;line-height:1.5;z-index:5}
+
+.control-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.control-row label{display:flex;justify-style:space-between;color:#aaa;font-size:11px}
+input[type=range]{width:100%;accent-color:#007acc;height:24px}
+input[type=checkbox]{width:18px;height:18px;accent-color:#007acc}
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.color-picker-row{display:flex;align-items:center;justify-style:space-between;padding:4px 0}
+.btn-main{width:100%;height:36px;border-radius:6px;border:none;background:#007acc;color:#fff;font-weight:bold;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-top:6px}
+.btn-main.secondary{background:#3a3a3a;color:#ccc}
+
+body.mode-pc .bottom-nav, body.mode-pc .drawer { display: none !important; }
+body.mode-pc .desktop-toolbar { width: 48px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 8px; z-index: 40; }
+body.mode-pc .desktop-toolbar .tool-btn { width: 36px; height: 36px; border-radius: 6px; border: 1px solid transparent; background: #2a2a2a; color: #ccc; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+body.mode-pc .desktop-toolbar .tool-btn.active { background: #007acc22; border-color: #007acc; color: #007acc; }
+
+body.mode-pc .desktop-sidebar { width: 280px; background: #1e1e1e; border-left: 1px solid #333; display: flex; flex-direction: column; z-index: 40; overflow-y: auto; padding: 12px; gap: 16px; }
+body.mode-pc .panel-section { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 12px; }
+body.mode-pc .panel-title { font-weight: bold; font-size: 12px; color: #007acc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+body.mode-mobile .desktop-toolbar, body.mode-mobile .desktop-sidebar { display: none !important; }
+body.mode-mobile .bottom-nav { height: calc(56px + env(safe-area-inset-bottom, 0px)); background: #1e1e1e; border-top: 1px solid #333; display: flex; align-items: flex-start; justify-style: space-around; padding: 4px 4px env(safe-area-inset-bottom, 0px) 4px; z-index: 200; position: relative; flex-shrink: 0; }
+body.mode-mobile .nav-btn { flex: 1; height: 48px; border: none; background: none; color: #888; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; cursor: pointer; }
+body.mode-mobile .nav-btn .icon { font-size: 18px; }
+body.mode-mobile .nav-btn.active { color: #007acc; font-weight: bold; }
+
+body.mode-mobile .drawer { position: fixed; bottom: calc(56px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; max-height: 70vh; background: #222; border-top: 1px solid #3d3d3d; border-radius: 16px 16px 0 0; box-shadow: 0 -10px 25px #000a; z-index: 150; transform: translateY(120%); transition: transform .25s cubic-bezier(0,0,0.2,1); display: flex; flex-direction: column; overflow: hidden; visibility: hidden; }
+body.mode-mobile .drawer.open { transform: translateY(0); visibility: visible; }
+body.mode-mobile .drawer-header { height: 44px; padding: 0 16px; background: #2a2a2a; border-bottom: 1px solid #333; display: flex; align-items: center; justify-style: space-between; font-weight: bold; flex-shrink: 0; }
+body.mode-mobile .drawer-body { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+
+body.mode-mobile .grid-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+body.mode-mobile .tool-tile { aspect-ratio: 1; border-radius: 8px; border: 1px solid #3a3a3a; background: #2a2a2a; color: #ccc; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10px; cursor: pointer; }
+body.mode-mobile .tool-tile .icon { font-size: 18px; }
+body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007acc; color: #007acc; font-weight: bold; }
+
+.layers-list { display: flex; flex-direction: column; gap: 6px; }
+.layer-item { height: 36px; padding: 0 10px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; display: flex; align-items: center; justify-style: space-between; cursor: pointer; }
+.layer-item.active { border-color: #007acc; background: #007acc15; }
+.order-btns { display: flex; gap: 6px; margin-top: 6px; }
+.btn-group-row { display: flex; gap: 6px; }
+</style>
+</head>
+<body class="mode-pc">
+
+<div class="top-bar">
+  <div class="top-title">🎨 Studio Rysunku Pro</div>
+  <div class="top-actions">
+    <button class="btn-icon" id="btnUndo" title="Cofnij (Ctrl+Z)">↩️</button>
+    <button class="mode-toggle" id="btnToggleMode">🖥️ PC</button>
+    <button class="btn-icon" id="btnZoomOut" title="Pomniejsz">➖</button>
+    <button class="btn-icon" id="btnResetZoom" title="Reset Widoku">🎯</button>
+    <button class="btn-icon" id="btnZoomIn" title="Powiększ">➕</button>
+    <button class="btn-icon" id="btnSave" title="Zapisz PNG">💾</button>
+  </div>
+</div>
+
+<div class="app-container">
+  <div class="desktop-toolbar">
+    <button class="tool-btn active" data-tool="select" title="Skaluj i Przesuwaj">↖</button>
+    <button class="tool-btn" data-tool="nodes" title="Tryb Plasteliny">📍</button>
+    <button class="tool-btn" data-tool="pan" title="Przesuń widok">✋</button>
+    <button class="tool-btn" data-tool="lasso" title="Lasso">🧲</button>
+    <button class="tool-btn" data-tool="rect" title="Prostokąt">▭</button>
+    <button class="tool-btn" data-tool="square" title="Kwadrat">□</button>
+    <button class="tool-btn" data-tool="ellipse" title="Elipsa">⬭</button>
+    <button class="tool-btn" data-tool="circle" title="Koło">○</button>
+    <button class="tool-btn" data-tool="triangle" title="Trójkąt">△</button>
+    <button class="tool-btn" data-tool="line" title="Linia">╱</button>
+    <button class="tool-btn" data-tool="guides" title="Prowadnice">📏</button>
+  </div>
+
+  <div class="workspace" id="workspace">
+    <canvas id="c"></canvas>
+    <div id="emptyMsg" class="empty-msg">Wczytaj zdjęcie z panelu bocznego<br>lub wybierz narzędzie i zacznij rysować.</div>
+  </div>
+
+  <div class="desktop-sidebar">
+    <div class="panel-section">
+      <div class="panel-title">Plik & Projekt</div>
+      <label class="btn-main">
+        <span>📷 Wczytaj Zdjęcie</span>
+        <input class="file-input-target" type="file" accept="image/*" style="display:none">
+      </label>
+      <div class="btn-group-row">
+        <button class="btn-main secondary btn-toggle-photo">👁 Rozłącz Zdjęcie</button>
+        <button class="btn-main secondary btn-close-img">Usuń</button>
+      </div>
+      <button class="btn-main secondary btn-clear-canvas">Wyczyść Rysunek</button>
+      <div class="btn-group-row" style="margin-top:6px">
+        <button class="btn-main secondary btn-export-json">💾 Zapisz JSON</button>
+        <label class="btn-main secondary" style="margin-top:0">
+          <span>📂 Wczytaj JSON</span>
+          <input id="jsonInput" type="file" accept=".json" style="display:none">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Edycja, Styl & Hierarchia</div>
+      <div class="color-picker-row">
+        <span>Kolor obrysu</span>
+        <input class="stroke-color-target" type="color" value="#ffffff" style="width:32px;height:32px;border:none;background:none;cursor:pointer">
+      </div>
+      <div class="control-row">
+        <label><span>Grubość obrysu</span><b class="sw-val">2px</b></label>
+        <input class="stroke-width-target" type="range" min="1" max="15" value="2">
+      </div>
+      <div class="checkbox-row">
+        <input class="fill-check-target" type="checkbox" checked>
+        <label>Wypełnienie</label>
+        <input class="fill-color-target" type="color" value="#007acc" style="width:28px;height:28px;border:none;background:none;margin-left:auto;cursor:pointer">
+      </div>
+      <div class="control-row">
+        <label><span>Przezroczystość wypełnienia</span><b class="opacity-val">50%</b></label>
+        <input class="fill-opacity-target" type="range" min="10" max="100" value="50">
+      </div>
+      
+      <div class="order-btns">
+        <button class="btn-main secondary btn-move-up" title="Przesuń wyżej">⬆ Na wierzch</button>
+        <button class="btn-main secondary btn-move-down" title="Przesuń niżej">⬇ Spód</button>
+      </div>
+      <button class="btn-main secondary btn-delete-sel">🗑️ Usuń zaznaczone</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Prowadnice (Siatka)</div>
+      <div class="btn-group-row">
+        <button class="btn-main secondary btn-add-guide-v">+ Pionowa</button>
+        <button class="btn-main secondary btn-add-guide-h">+ Pozioma</button>
+      </div>
+      <button class="btn-main secondary btn-add-guide-a" style="margin-top:6px">+ Skośna (Kątowa)</button>
+      <button class="btn-main secondary btn-clear-guides" style="margin-top:6px">Usuń Wszystkie Prowadnice</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Walor i Masa (Puzzle)</div>
+      <div class="checkbox-row">
+        <input class="grayscale-target" type="checkbox">
+        <label><b>Tryb Czarno-Biały (Grayscale)</b></label>
+      </div>
+      <div class="control-row">
+        <label><span>Posterizacja</span><b class="lvl-val">Oryginał</b></label>
+        <input class="level-target" type="range" min="0" max="8" value="0">
+      </div>
+      <div class="control-row">
+        <label><span>Kontrast</span><b class="cv-val">100%</b></label>
+        <input class="contrast-target" type="range" min="50" max="180" value="100">
+      </div>
+      <div class="control-row">
+        <label><span>Jasność</span><b class="bv-val">0</b></label>
+        <input class="bright-target" type="range" min="-80" max="80" value="0">
+      </div>
+      <div class="control-row">
+        <label><span>Uproszczenie</span><b class="sv-val">5</b></label>
+        <input class="simplify-target" type="range" min="1" max="20" value="5">
+      </div>
+      <div class="checkbox-row">
+        <input class="puzzle-target" type="checkbox">
+        <label>Pokaż kontury mas (Puzzle)</label>
+      </div>
+      <div class="checkbox-row">
+        <input class="invert-target" type="checkbox">
+        <label>Odwróć walor (Negatyw)</label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Warstwy Globalne</div>
+      <div class="layers-list layers-list-target"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn-main btn-add-layer">+ Nowa</button>
+        <button class="btn-main secondary btn-del-layer">Usuń</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILNE SZUFLADY MENU -->
+  <div class="drawer" id="drawer-file">
+    <div class="drawer-header"><span>Plik & Projekt</span><button class="btn-icon" onclick="closeDrawers()">✕</button></div>
+    <div class="drawer-body">
+      <label class="btn-main">
+        <span>📷 Wczytaj Zdjęcie</span>
+        <input class="file-input-target" type="file" accept="image/*" style="display:none">
+      </label>
+      <div class="btn-group-row">
+        <button class="btn-main secondary btn-toggle-photo">👁 Pokaż/Ukryj Zdjęcie</button>
+        <button class="btn-main secondary btn-close-img">Zamknij</button>
+      </div>
+      <button class="btn-main secondary btn-clear-canvas">Wyczyść Rysunek</button>
+      <div class="btn-group-row">
+        <button class="btn-main secondary btn-export-json">💾 Eksport JSON</button>
+        <label class="btn-main secondary" style="margin-top:0">
+          <span>📂 Import JSON</span>
+          <input id="jsonInputMobile" type="file" accept=".json" style="display:none">
+        </label>
+      </div>
+      <button class="btn-main" onclick="exportPNG()">💾 Eksportuj PNG</button>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer-tools">
+    <div class="drawer-header"><span>Narzędzia i Edycja</span><button class="btn-icon" onclick="closeDrawers()">✕</button></div>
+    <div class="drawer-body">
+      <div class="grid-tools">
+        <div class="tool-tile active" data-tool="select"><span class="icon">↖</span>Zaznacz</div>
+        <div class="tool-tile" data-tool="nodes"><span class="icon">📍</span>Plastelina</div>
+        <div class="tool-tile" data-tool="pan"><span class="icon">✋</span>Przesuń</div>
+        <div class="tool-tile" data-tool="lasso"><span class="icon">🧲</span>Lasso</div>
+        <div class="tool-tile" data-tool="rect"><span class="icon">▭</span>Prostokąt</div>
+        <div class="tool-tile" data-tool="square"><span class="icon">□</span>Kwadrat</div>
+        <div class="tool-tile" data-tool="ellipse"><span class="icon">⬭</span>Elipsa</div>
+        <div class="tool-tile" data-tool="circle"><span class="icon">○</span>Koło</div>
+        <div class="tool-tile" data-tool="triangle"><span class="icon">△</span>Trójkąt</div>
+        <div class="tool-tile" data-tool="line"><span class="icon">╱</span>Linia</div>
+        <div class="tool-tile" data-tool="guides"><span class="icon">📏</span>Siatka</div>
+      </div>
+
+      <div style="border-top: 1px solid #333; padding-top: 8px; margin-top: 4px;">
+        <span style="font-size:11px; color:#007acc; font-weight:bold;">DODAJ PROWADNICĘ:</span>
+        <div class="btn-group-row" style="margin-top:4px">
+          <button class="btn-main secondary btn-add-guide-v">+ Pion</button>
+          <button class="btn-main secondary btn-add-guide-h">+ Poziom</button>
+          <button class="btn-main secondary btn-add-guide-a">+ Skos</button>
+        </div>
+      </div>
+      
+      <div class="color-picker-row">
+        <span>Kolor obrysu</span>
+        <input class="stroke-color-target" type="color" value="#ffffff" style="width:36px;height:36px;border:none;background:none;cursor:pointer">
+      </div>
+
+      <div class="control-row">
+        <label><span>Grubość obrysu</span><b class="sw-val">2px</b></label>
+        <input class="stroke-width-target" type="range" min="1" max="15" value="2">
+      </div>
+      <div class="checkbox-row">
+        <input class="fill-check-target" type="checkbox" checked>
+        <label>Wypełnienie</label>
+        <input class="fill-color-target" type="color" value="#007acc" style="width:32px;height:32px;border:none;background:none;margin-left:auto;cursor:pointer">
+      </div>
+      <div class="control-row">
+        <label><span>Przezroczystość wypełnienia</span><b class="opacity-val">50%</b></label>
+        <input class="fill-opacity-target" type="range" min="10" max="100" value="50">
+      </div>
+
+      <div class="order-btns">
+        <button class="btn-main secondary btn-move-up">⬆ Wyżej</button>
+        <button class="btn-main secondary btn-move-down">⬇ Niżej</button>
+      </div>
+
+      <button class="btn-main secondary btn-delete-sel">🗑️ Usuń zaznaczony obiekt</button>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer-valor">
+    <div class="drawer-header"><span>Walor i Masa</span><button class="btn-icon" onclick="closeDrawers()">✕</button></div>
+    <div class="drawer-body">
+      <div class="checkbox-row">
+        <input class="grayscale-target" type="checkbox">
+        <label><b>Tryb Czarno-Biały (Grayscale)</b></label>
+      </div>
+      <div class="control-row">
+        <label><span>Posterizacja</span><b class="lvl-val">Oryginał</b></label>
+        <input class="level-target" type="range" min="0" max="8" value="0">
+      </div>
+      <div class="control-row">
+        <label><span>Kontrast</span><b class="cv-val">100%</b></label>
+        <input class="contrast-target" type="range" min="50" max="180" value="100">
+      </div>
+      <div class="control-row">
+        <label><span>Jasność</span><b class="bv-val">0</b></label>
+        <input class="bright-target" type="range" min="-80" max="80" value="0">
+      </div>
+      <div class="control-row">
+        <label><span>Uproszczenie</span><b class="sv-val">5</b></label>
+        <input class="simplify-target" type="range" min="1" max="20" value="5">
+      </div>
+      <div class="checkbox-row">
+        <input class="puzzle-target" type="checkbox">
+        <label>Pokaż kontury mas (Puzzle)</label>
+      </div>
+      <div class="checkbox-row">
+        <input class="invert-target" type="checkbox">
+        <label>Odwróć walor (Negatyw)</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer-layers">
+    <div class="drawer-header"><span>Warstwy Globalne</span><button class="btn-icon" onclick="closeDrawers()">✕</button></div>
+    <div class="drawer-body">
+      <div class="layers-list layers-list-target"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-main btn-add-layer">+ Nowa</button>
+        <button class="btn-main secondary btn-del-layer">Usuń</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn" data-target="drawer-file"><span class="icon">📁</span>Plik</button>
+  <button class="nav-btn" data-target="drawer-tools"><span class="icon">🛠️</span>Narzędzia</button>
+  <button class="nav-btn" data-target="drawer-valor"><span class="icon">☯️</span>Walor</button>
+  <button class="nav-btn" data-target="drawer-layers"><span class="icon">📚</span>Warstwy</button>
+</div>
+
+<script>
+const c = document.getElementById('c'), x = c.getContext('2d', {willReadFrequently: true});
+const workspace = document.getElementById('workspace');
+
+let img = null, imgProcCanvas = null, originalImageData = null, cachedProcessedCanvas = null;
+let sh = [], layers = [{id: 1, name: 'Warstwa 1', on: true}], activeLayer = 1, sel = null;
+let tool = 'select', isDrawingShape = false, startPos = null, tempShapeData = null, editMode = null;
+let activeHandle = null, activeNodeIndex = null;
+let nextS = 1, nextL = 2;
+let lassoPoints = [], tempLassoCursor = null;
+
+// Prowadnice / Siatka
+let guides = []; // { id, type: 'v'|'h'|'a', x, y, angle }
+let activeGuide = null, activeGuideHandle = null;
+let nextG = 1;
+
+// Historia Undo
+let historyStack = [];
+const MAX_UNDO = 25;
+
+let view = { x: 0, y: 0, scale: 1 };
+let isPanning = false, panStart = { x: 0, y: 0 };
+let activePointers = [], initialPinchDist = null, initialScale = 1;
+let renderRequested = false, imageDirty = true;
+
+let longPressTimer = null, lastTapTime = 0, lastTapNode = null;
+
+const L = id => layers.find(a => a.id === id);
+const S = () => sh.find(a => a.id === sel);
+
+function pushHistory() {
+  if (historyStack.length >= MAX_UNDO) historyStack.shift();
+  historyStack.push(JSON.stringify({
+    sh, layers, activeLayer, guides
+  }));
+}
+
+function undo() {
+  if (historyStack.length === 0) return;
+  const lastState = JSON.parse(historyStack.pop());
+  sh = lastState.sh || [];
+  layers = lastState.layers || [{id: 1, name: 'Warstwa 1', on: true}];
+  activeLayer = lastState.activeLayer || 1;
+  guides = lastState.guides || [];
+  sel = null;
+  layersUI();
+  requestRender();
+}
+
+document.getElementById('btnUndo').onclick = undo;
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+  }
+});
+
+function requestRender() {
+  if (!renderRequested) {
+    renderRequested = true;
+    requestAnimationFrame(() => {
+      processAndRenderImmediate();
+      renderRequested = false;
+    });
+  }
+}
+
+let isMobileMode = window.innerWidth <= 768;
+function updateModeUI() {
+  document.body.className = isMobileMode ? 'mode-mobile' : 'mode-pc';
+  document.getElementById('btnToggleMode').innerHTML = isMobileMode ? '📱 Mobile' : '🖥️ PC';
+  setTimeout(autoFitAndCenter, 50);
+}
+
+document.getElementById('btnToggleMode').onclick = () => {
+  isMobileMode = !isMobileMode;
+  closeDrawers();
+  updateModeUI();
+};
+
+function closeDrawers() {
+  document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    const target = btn.dataset.target;
+    const drawer = document.getElementById(target);
+    const isOpen = drawer.classList.contains('open');
+    closeDrawers();
+    if (!isOpen) {
+      drawer.classList.add('open');
+      btn.classList.add('active');
+    }
+  };
+});
+
+function autoFitAndCenter() {
+  const ww = workspace.clientWidth, wh = workspace.clientHeight;
+  if (ww <= 0 || wh <= 0) return;
+
+  if (img) {
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const scaleX = ww / c.width;
+    const scaleY = wh / c.height;
+    view.scale = Math.min(scaleX, scaleY);
+  } else {
+    c.width = Math.max(600, ww);
+    c.height = Math.max(400, wh);
+    view.scale = 1;
+  }
+
+  view.x = (ww - c.width * view.scale) / 2;
+  view.y = (wh - c.height * view.scale) / 2;
+  applyViewTransform();
+  requestRender();
+  layersUI();
+}
+
+function applyViewTransform() {
+  c.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+}
+
+function zoomAt(factor, clientX, clientY) {
+  const r = workspace.getBoundingClientRect();
+  const cx = clientX !== undefined ? clientX - r.left : r.width / 2;
+  const cy = clientY !== undefined ? clientY - r.top : r.height / 2;
+
+  const newScale = Math.max(0.05, Math.min(15, view.scale * factor));
+  view.x = cx - (cx - view.x) * (newScale / view.scale);
+  view.y = cy - (cy - view.y) * (newScale / view.scale);
+  view.scale = newScale;
+  applyViewTransform();
+}
+
+workspace.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 0.88;
+  zoomAt(factor, e.clientX, e.clientY);
+}, { passive: false });
+
+document.getElementById('btnZoomIn').onclick = () => zoomAt(1.2);
+document.getElementById('btnZoomOut').onclick = () => zoomAt(0.8);
+document.getElementById('btnResetZoom').onclick = autoFitAndCenter;
+
+window.addEventListener('resize', autoFitAndCenter);
+
+function syncInput(selector, event, callback) {
+  document.querySelectorAll(selector).forEach(el => {
+    el.addEventListener(event, e => {
+      callback(e);
+      document.querySelectorAll(selector).forEach(other => {
+        if (other !== el) {
+          if (other.type === 'checkbox') other.checked = el.checked;
+          else other.value = el.value;
+        }
+      });
+    });
+  });
+}
+
+function updateTextDisplays(className, text) {
+  document.querySelectorAll('.' + className).forEach(el => el.textContent = text);
+}
+
+syncInput('.file-input-target', 'change', e => {
+  const f = e.target.files?.[0]; if (!f) return;
+  const z = new Image();
+  z.onload = () => {
+    img = z;
+    const max = 2048, scale = Math.min(1, max / Math.max(z.naturalWidth, z.naturalHeight));
+    imgProcCanvas = document.createElement('canvas');
+    imgProcCanvas.width = Math.round(z.naturalWidth * scale);
+    imgProcCanvas.height = Math.round(z.naturalHeight * scale);
+    const ctx = imgProcCanvas.getContext('2d', {willReadFrequently: true});
+    ctx.drawImage(z, 0, 0, imgProcCanvas.width, imgProcCanvas.height);
+    originalImageData = ctx.getImageData(0, 0, imgProcCanvas.width, imgProcCanvas.height);
+    
+    state.showPhoto = true;
+    imageDirty = true;
+    document.getElementById('emptyMsg').style.display = 'none';
+    closeDrawers();
+    autoFitAndCenter();
+  };
+  z.src = URL.createObjectURL(f);
+});
+
+document.querySelectorAll('.btn-close-img').forEach(b => b.onclick = () => { 
+  img = null; imgProcCanvas = null; originalImageData = null; cachedProcessedCanvas = null;
+  document.getElementById('emptyMsg').style.display = 'block'; 
+  closeDrawers(); 
+  autoFitAndCenter(); 
+});
+
+document.querySelectorAll('.btn-toggle-photo').forEach(b => b.onclick = () => {
+  state.showPhoto = !state.showPhoto;
+  document.querySelectorAll('.btn-toggle-photo').forEach(el => {
+    el.textContent = state.showPhoto ? '👁 Ukryj Zdjęcie' : '🙈 Pokaż Zdjęcie';
+  });
+  requestRender();
+});
+
+document.querySelectorAll('.btn-clear-canvas').forEach(b => b.onclick = () => { 
+  pushHistory();
+  sh = []; sel = null; lassoPoints = []; closeDrawers(); requestRender(); 
+});
+
+function markImageDirty() { imageDirty = true; requestRender(); }
+
+const state = { level: 0, contrast: 100, brightness: 0, simplify: 5, showPuzzle: false, invert: false, grayscale: false, showPhoto: true };
+
+syncInput('.grayscale-target', 'change', e => { state.grayscale = e.target.checked; markImageDirty(); });
+syncInput('.level-target', 'input', e => { state.level = +e.target.value; updateTextDisplays('lvl-val', state.level === 0 ? 'Oryginał' : state.level); markImageDirty(); });
+syncInput('.contrast-target', 'input', e => { state.contrast = +e.target.value; updateTextDisplays('cv-val', e.target.value + '%'); markImageDirty(); });
+syncInput('.bright-target', 'input', e => { state.brightness = +e.target.value; updateTextDisplays('bv-val', e.target.value); markImageDirty(); });
+syncInput('.simplify-target', 'input', e => { state.simplify = +e.target.value; updateTextDisplays('sv-val', e.target.value); markImageDirty(); });
+syncInput('.stroke-width-target', 'input', e => { updateTextDisplays('sw-val', e.target.value + 'px'); const s = S(); if(s){ pushHistory(); s.sw = +e.target.value; requestRender();} });
+syncInput('.stroke-color-target', 'input', e => { const s = S(); if(s){ pushHistory(); s.stroke = e.target.value; requestRender();} });
+syncInput('.fill-color-target', 'input', e => { const s = S(); if(s){ pushHistory(); s.fc = e.target.value; requestRender();} });
+syncInput('.fill-check-target', 'change', e => { const s = S(); if(s){ pushHistory(); s.fill = e.target.checked; requestRender();} });
+syncInput('.fill-opacity-target', 'input', e => { updateTextDisplays('opacity-val', e.target.value + '%'); const s = S(); if(s){ pushHistory(); s.fillOpacity = e.target.value / 100; requestRender();} });
+syncInput('.puzzle-target', 'change', e => { state.showPuzzle = e.target.checked; markImageDirty(); });
+syncInput('.invert-target', 'change', e => { state.invert = e.target.checked; markImageDirty(); });
+
+// DODAWANIE PROWADNIC
+document.querySelectorAll('.btn-add-guide-v').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'v', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
+document.querySelectorAll('.btn-add-guide-h').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'h', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
+document.querySelectorAll('.btn-add-guide-a').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'a', x: c.width / 2, y: c.height / 2, angle: 45 }); setTool('guides'); });
+document.querySelectorAll('.btn-clear-guides').forEach(b => b.onclick = () => { pushHistory(); guides = []; requestRender(); });
+
+// HIERARCHIA OBIEKTÓW (NA WIERZCH / NA SPÓD)
+document.querySelectorAll('.btn-move-up').forEach(b => b.onclick = () => {
+  if (sel === null) return;
+  const idx = sh.findIndex(s => s.id === sel);
+  if (idx < sh.length - 1) {
+    pushHistory();
+    const item = sh.splice(idx, 1)[0];
+    sh.splice(idx + 1, 0, item);
+    requestRender();
+  }
+});
+
+document.querySelectorAll('.btn-move-down').forEach(b => b.onclick = () => {
+  if (sel === null) return;
+  const idx = sh.findIndex(s => s.id === sel);
+  if (idx > 0) {
+    pushHistory();
+    const item = sh.splice(idx, 1)[0];
+    sh.splice(idx - 1, 0, item);
+    requestRender();
+  }
+});
+
+function setTool(t) {
+  tool = t; lassoPoints = []; tempLassoCursor = null;
+  document.querySelectorAll('.tool-btn, .tool-tile').forEach(el => {
+    if (el.dataset.tool === t) el.classList.add('active');
+    else el.classList.remove('active');
+  });
+  if (t === 'pan') workspace.classList.add('is-panning');
+  else workspace.classList.remove('is-panning');
+
+  closeDrawers();
+  requestRender();
+}
+
+document.querySelectorAll('.tool-btn, .tool-tile').forEach(el => {
+  el.onclick = () => setTool(el.dataset.tool);
+});
+
+function getProcessedImage() {
+  if (!originalImageData) return null;
+  if (!imageDirty && cachedProcessedCanvas) return cachedProcessedCanvas;
+
+  const w = imgProcCanvas.width, h = imgProcCanvas.height;
+  if (!cachedProcessedCanvas) {
+    cachedProcessedCanvas = document.createElement('canvas');
+    cachedProcessedCanvas.width = w;
+    cachedProcessedCanvas.height = h;
+  }
+  const oCtx = cachedProcessedCanvas.getContext('2d');
+
+  const ct = state.contrast / 100, b = state.brightness;
+  const data = originalImageData.data;
+  const imgData = oCtx.createImageData(w, h);
+
+  if (state.grayscale || state.level > 0) {
+    const gray = new Float32Array(w * h);
+    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+      let g = 0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2];
+      g = (g - 128) * ct + 128 + b; g = Math.max(0, Math.min(255, g));
+      if (state.invert) g = 255 - g;
+      gray[j] = g;
+    }
+
+    const vals = new Uint8Array(w * h);
+    const lvl = state.level;
+    const step = 255 / Math.max(1, lvl - 1);
+    for (let i = 0; i < gray.length; i++) vals[i] = lvl === 0 ? gray[i] : Math.round(gray[i] / step) * step;
+
+    for (let p = 0; p < w * h; p++) {
+      let v = vals[p];
+      imgData.data[p*4] = imgData.data[p*4+1] = imgData.data[p*4+2] = v;
+      imgData.data[p*4+3] = 255;
+    }
+
+    if (state.showPuzzle && lvl > 0) {
+      const stp = Math.max(1, Math.floor(state.simplify));
+      for (let y = 0; y < h - stp; y++) {
+        for (let x = 0; x < w - stp; x++) {
+          const idx = y * w + x;
+          if (Math.abs(vals[idx] - vals[idx + stp]) > 5 || Math.abs(vals[idx] - vals[idx + stp * w]) > 5) {
+            const p4 = idx * 4;
+            imgData.data[p4] = imgData.data[p4+1] = imgData.data[p4+2] = 0;
+          }
+        }
+      }
+    }
+  } else {
+    // Normalne przetwarzanie kolorowe (jasność/kontrast/negatyw)
+    for (let i = 0; i < data.length; i += 4) {
+      let r = (data[i] - 128) * ct + 128 + b;
+      let g = (data[i+1] - 128) * ct + 128 + b;
+      let bVal = (data[i+2] - 128) * ct + 128 + b;
+      r = Math.max(0, Math.min(255, r));
+      g = Math.max(0, Math.min(255, g));
+      bVal = Math.max(0, Math.min(255, bVal));
+
+      if (state.invert) { r = 255 - r; g = 255 - g; bVal = 255 - bVal; }
+
+      imgData.data[i] = r;
+      imgData.data[i+1] = g;
+      imgData.data[i+2] = bVal;
+      imgData.data[i+3] = 255;
+    }
+  }
+
+  oCtx.putImageData(imgData, 0, 0);
+  imageDirty = false;
+  return cachedProcessedCanvas;
+}
+
+function pointerPos(e) {
+  const r = c.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (c.width / r.width),
+    y: (e.clientY - r.top) * (c.height / r.height)
+  };
+}
+
+function getShapeBounds(s) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  s.pts.forEach(p => {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  });
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function getHandles(s) {
+  const b = getShapeBounds(s);
+  return {
+    tl: { x: b.x, y: b.y },
+    tr: { x: b.x + b.w, y: b.y },
+    bl: { x: b.x, y: b.y + b.h },
+    br: { x: b.x + b.w, y: b.y + b.h }
+  };
+}
+
+function hitHandle(p, s) {
+  if (!s) return null;
+  const h = getHandles(s);
+  const r = 16 / view.scale; 
+  for (let key in h) {
+    if (Math.hypot(p.x - h[key].x, p.y - h[key].y) <= r) return key;
+  }
+  return null;
+}
+
+function hitNode(p, s) {
+  if (!s) return null;
+  const r = (isMobileMode ? 20 : 12) / view.scale;
+  for (let i = 0; i < s.pts.length; i++) {
+    if (Math.hypot(p.x - s.pts[i].x, p.y - s.pts[i].y) <= r) return i;
+  }
+  return null;
+}
+
+function distToSegment(p, v, w) {
+  const l2 = (v.x - w.x)**2 + (v.y - w.y)**2;
+  if (l2 === 0) return { dist: Math.hypot(p.x - v.x, p.y - v.y), proj: v };
+  let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  const proj = { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) };
+  return { dist: Math.hypot(p.x - proj.x, p.y - proj.y), proj };
+}
+
+function hitEdge(p, s) {
+  if (!s || s.pts.length < 2) return null;
+  const threshold = (isMobileMode ? 18 : 12) / view.scale;
+  let bestDist = Infinity, bestIdx = -1, bestProj = null;
+
+  for (let i = 0; i < s.pts.length; i++) {
+    const nextIdx = (i + 1) % s.pts.length;
+    if (s.type === 'line' && i === s.pts.length - 1) break;
+    const { dist, proj } = distToSegment(p, s.pts[i], s.pts[nextIdx]);
+    if (dist < threshold && dist < bestDist) {
+      bestDist = dist;
+      bestIdx = i;
+      bestProj = proj;
+    }
+  }
+  return bestIdx !== -1 ? { index: bestIdx + 1, point: bestProj } : null;
+}
+
+function generateShapePoints(type, x, y, w, h) {
+  const pts = [];
+  if (type === 'square' || type === 'circle') {
+    const q = Math.max(Math.abs(w), Math.abs(h));
+    w = q * Math.sign(w || 1); h = q * Math.sign(h || 1);
+  }
+
+  if (type === 'rect' || type === 'square') {
+    pts.push({x, y}, {x: x+w/2, y}, {x: x+w, y}, {x: x+w, y: y+h/2}, {x: x+w, y: y+h}, {x: x+w/2, y: y+h}, {x, y: y+h}, {x, y: y+h/2});
+  } else if (type === 'ellipse' || type === 'circle') {
+    const cx = x + w/2, cy = y + h/2, rx = Math.abs(w/2), ry = Math.abs(h/2);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+    }
+  } else if (type === 'triangle') {
+    pts.push({ x: x + w/2, y }, { x: x + w, y: y + h }, { x, y: y + h });
+  } else if (type === 'line') {
+    pts.push({ x, y }, { x: x + w, y: y + h });
+  }
+  return pts;
+}
+
+workspace.addEventListener('contextmenu', e => e.preventDefault());
+
+function removeNode(s, idx) {
+  if (s && s.pts.length > 2) {
+    pushHistory();
+    s.pts.splice(idx, 1);
+    requestRender();
+  }
+}
+
+function hitTestGuide(p) {
+  const r = (isMobileMode ? 20 : 12) / view.scale;
+  for (let i = guides.length - 1; i >= 0; i--) {
+    const g = guides[i];
+    if (g.type === 'v') {
+      if (Math.abs(p.x - g.x) <= r) return { guide: g, handle: 'move' };
+    } else if (g.type === 'h') {
+      if (Math.abs(p.y - g.y) <= r) return { guide: g, handle: 'move' };
+    } else if (g.type === 'a') {
+      const distCenter = Math.hypot(p.x - g.x, p.y - g.y);
+      if (distCenter <= r) return { guide: g, handle: 'move' };
+      // Sprawdzanie uchwytu rotacji
+      const rad = g.angle * Math.PI / 180;
+      const hx = g.x + Math.cos(rad) * 60;
+      const hy = g.y + Math.sin(rad) * 60;
+      if (Math.hypot(p.x - hx, p.y - hy) <= r * 1.5) return { guide: g, handle: 'rotate' };
+    }
+  }
+  return null;
+}
+
+workspace.onpointerdown = e => {
+  if (longPressTimer) clearTimeout(longPressTimer);
+  
+  activePointers.push(e);
+  if (activePointers.length === 2) {
+    initialPinchDist = Math.hypot(
+      activePointers[0].clientX - activePointers[1].clientX,
+      activePointers[0].clientY - activePointers[1].clientY
+    );
+    initialScale = view.scale;
+    return;
+  }
+
+  if (tool === 'pan' || e.button === 1) {
+    isPanning = true;
+    panStart = { x: e.clientX - view.x, y: e.clientY - view.y };
+    return;
+  }
+
+  if (activePointers.length > 1) return;
+  const p = pointerPos(e);
+
+  // LOGIKA PROWADNIC
+  if (tool === 'guides') {
+    const gHit = hitTestGuide(p);
+    if (gHit) {
+      pushHistory();
+      activeGuide = gHit.guide;
+      activeGuideHandle = gHit.handle;
+      startPos = p;
+    }
+    return;
+  }
+
+  // LOGIKA LASSA
+  if (tool === 'lasso') {
+    if (lassoPoints.length > 2 && Math.hypot(p.x - lassoPoints[0].x, p.y - lassoPoints[0].y) < 25 / view.scale) {
+      pushHistory();
+      addPolygonShape(lassoPoints);
+      lassoPoints = [];
+      setTool('select');
+      return;
+    }
+    lassoPoints.push(p);
+    requestRender();
+    return;
+  }
+
+  if (tool === 'nodes') {
+    const s = S();
+    if (s) {
+      const nIdx = hitNode(p, s);
+      if (e.button === 2 && nIdx !== null) {
+        removeNode(s, nIdx);
+        return;
+      }
+
+      if (nIdx !== null) {
+        const now = Date.now();
+        if (lastTapNode === nIdx && (now - lastTapTime) < 300) {
+          removeNode(s, nIdx);
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+        lastTapNode = nIdx;
+
+        longPressTimer = setTimeout(() => {
+          removeNode(s, nIdx);
+          editMode = null;
+          activeNodeIndex = null;
+        }, 400);
+
+        pushHistory();
+        editMode = 'node_drag';
+        activeNodeIndex = nIdx;
+        startPos = p;
+        return;
+      }
+
+      const edgeHit = hitEdge(p, s);
+      if (edgeHit) {
+        pushHistory();
+        s.pts.splice(edgeHit.index, 0, edgeHit.point);
+        editMode = 'node_drag';
+        activeNodeIndex = edgeHit.index;
+        startPos = p;
+        requestRender();
+        return;
+      }
+    }
+
+    const clickedId = hitTest(p);
+    if (clickedId !== null) {
+      sel = clickedId;
+      layersUI();
+      requestRender();
+    }
+    return;
+  }
+
+  if (tool === 'select') {
+    const s = S();
+    if (s) {
+      const h = hitHandle(p, s);
+      if (h) {
+        pushHistory();
+        editMode = 'scale';
+        activeHandle = h;
+        startPos = p;
+        tempShapeData = { bounds: getShapeBounds(s), pts: JSON.parse(JSON.stringify(s.pts)) };
+        return;
+      }
+    }
+
+    const clickedId = hitTest(p);
+    if (clickedId !== null) {
+      pushHistory();
+      sel = clickedId;
+      editMode = 'move';
+      startPos = p;
+      tempShapeData = { pts: JSON.parse(JSON.stringify(S().pts)) };
+      layersUI();
+      requestRender();
+      return;
+    } else {
+      sel = null;
+      layersUI();
+      requestRender();
+      return;
+    }
+  }
+
+  isDrawingShape = true;
+  startPos = p;
+  tempShapeData = { type: tool, x: p.x, y: p.y, w: 0, h: 0 };
+};
+
+workspace.onpointermove = e => {
+  for (let i = 0; i < activePointers.length; i++) {
+    if (activePointers[i].pointerId === e.pointerId) activePointers[i] = e;
+  }
+
+  if (activePointers.length === 2 && initialPinchDist) {
+    if (longPressTimer) clearTimeout(longPressTimer);
+    const dist = Math.hypot(
+      activePointers[0].clientX - activePointers[1].clientX,
+      activePointers[0].clientY - activePointers[1].clientY
+    );
+    const factor = dist / initialPinchDist;
+    const midX = (activePointers[0].clientX + activePointers[1].clientX) / 2;
+    const midY = (activePointers[0].clientY + activePointers[1].clientY) / 2;
+    zoomAt(factor / (view.scale / initialScale), midX, midY);
+    return;
+  }
+
+  if (isPanning) {
+    view.x = e.clientX - panStart.x;
+    view.y = e.clientY - panStart.y;
+    applyViewTransform();
+    return;
+  }
+
+  if (activePointers.length > 1) return;
+  const p = pointerPos(e);
+
+  if (startPos && Math.hypot(p.x - startPos.x, p.y - startPos.y) > 5 / view.scale) {
+    if (longPressTimer) clearTimeout(longPressTimer);
+  }
+
+  if (tool === 'guides' && activeGuide) {
+    if (activeGuideHandle === 'move') {
+      activeGuide.x = p.x;
+      activeGuide.y = p.y;
+    } else if (activeGuideHandle === 'rotate') {
+      const ang = Math.atan2(p.y - activeGuide.y, p.x - activeGuide.x) * 180 / Math.PI;
+      activeGuide.angle = ang;
+    }
+    requestRender();
+    return;
+  }
+
+  if (tool === 'lasso' && lassoPoints.length > 0) { 
+    tempLassoCursor = p; 
+    requestRender(); 
+    return; 
+  }
+
+  if (isDrawingShape && tempShapeData) {
+    tempShapeData.w = p.x - startPos.x;
+    tempShapeData.h = p.y - startPos.y;
+    requestRender();
+    return;
+  }
+
+  const s = S();
+  if (!s) return;
+
+  if (editMode === 'node_drag' && activeNodeIndex !== null) {
+    s.pts[activeNodeIndex].x = p.x;
+    s.pts[activeNodeIndex].y = p.y;
+    requestRender();
+    return;
+  }
+
+  if (editMode === 'scale' && activeHandle && tempShapeData) {
+    const b = tempShapeData.bounds;
+    const dx = p.x - startPos.x, dy = p.y - startPos.y;
+    let newX = b.x, newY = b.y, newW = b.w, newH = b.h;
+
+    if (activeHandle === 'br') { newW = b.w + dx; newH = b.h + dy; }
+    else if (activeHandle === 'bl') { newX = b.x + dx; newW = b.w - dx; newH = b.h + dy; }
+    else if (activeHandle === 'tr') { newY = b.y + dy; newW = b.w + dx; newH = b.h - dy; }
+    else if (activeHandle === 'tl') { newX = b.x + dx; newY = b.y + dy; newW = b.w - dx; newH = b.h - dy; }
+
+    const scaleX = newW / (b.w || 1), scaleY = newH / (b.h || 1);
+    s.pts = tempShapeData.pts.map(pt => ({
+      x: newX + (pt.x - b.x) * scaleX,
+      y: newY + (pt.y - b.y) * scaleY
+    }));
+    requestRender();
+    return;
+  }
+
+  if (editMode === 'move' && tempShapeData) {
+    const dx = p.x - startPos.x, dy = p.y - startPos.y;
+    s.pts = tempShapeData.pts.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+    requestRender();
+  }
+};
+
+workspace.onpointerup = workspace.onpointercancel = e => {
+  if (longPressTimer) clearTimeout(longPressTimer);
+  activePointers = activePointers.filter(p => p.pointerId !== e.pointerId);
+  if (activePointers.length < 2) initialPinchDist = null;
+  if (isPanning) { isPanning = false; return; }
+
+  if (tool === 'guides') {
+    activeGuide = null;
+    activeGuideHandle = null;
+    return;
+  }
+
+  if (tool === 'lasso') return;
+
+  if (isDrawingShape && tempShapeData) {
+    isDrawingShape = false;
+    if (Math.abs(tempShapeData.w) > 3 || Math.abs(tempShapeData.h) > 3) {
+      pushHistory();
+      addShape(tempShapeData.type, tempShapeData.x, tempShapeData.y, tempShapeData.w, tempShapeData.h);
+      setTool('select');
+    }
+    tempShapeData = null; startPos = null;
+    requestRender();
+  }
+
+  editMode = null; activeHandle = null; activeNodeIndex = null;
+};
+
+function hexToRgba(hex, alpha) {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+}
+
+function addShape(type, x0, y0, w, h) {
+  const pts = generateShapePoints(type, x0, y0, w, h);
+  const strokeVal = document.querySelector('.stroke-color-target').value;
+  const fillVal = document.querySelector('.fill-color-target').value;
+  const fillCheck = document.querySelector('.fill-check-target').checked;
+  const fillOp = +document.querySelector('.fill-opacity-target').value / 100;
+  const swVal = +document.querySelector('.stroke-width-target').value;
+
+  const s = {
+    id: nextS++, type, pts, stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, sw: swVal, layer: activeLayer
+  };
+  sh.push(s); sel = s.id; layersUI(); requestRender();
+}
+
+function addPolygonShape(pts) {
+  const strokeVal = document.querySelector('.stroke-color-target').value;
+  const fillVal = document.querySelector('.fill-color-target').value;
+  const fillCheck = document.querySelector('.fill-check-target').checked;
+  const fillOp = +document.querySelector('.fill-opacity-target').value / 100;
+  const swVal = +document.querySelector('.stroke-width-target').value;
+
+  const s = {
+    id: nextS++, type: 'polygon', pts: [...pts], stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, sw: swVal, layer: activeLayer
+  };
+  sh.push(s); sel = s.id; layersUI(); requestRender();
+}
+
+function hitTest(p) {
+  for (let i = sh.length - 1; i >= 0; i--) {
+    const s = sh[i]; if (!L(s.layer)?.on) continue;
+    const b = getShapeBounds(s);
+    if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return s.id;
+  }
+  return null;
+}
+
+function renderGuides() {
+  if (guides.length === 0) return;
+  x.save();
+  x.lineWidth = 1.5 / view.scale;
+
+  guides.forEach(g => {
+    x.strokeStyle = '#00e5ff';
+    x.fillStyle = '#00e5ff';
+    x.beginPath();
+
+    if (g.type === 'v') {
+      x.moveTo(g.x, 0);
+      x.lineTo(g.x, c.height);
+      x.stroke();
+      if (tool === 'guides') {
+        x.beginPath(); x.arc(g.x, g.y, (isMobileMode ? 10 : 6) / view.scale, 0, Math.PI * 2); x.fill();
+      }
+    } else if (g.type === 'h') {
+      x.moveTo(0, g.y);
+      x.lineTo(c.width, g.y);
+      x.stroke();
+      if (tool === 'guides') {
+        x.beginPath(); x.arc(g.x, g.y, (isMobileMode ? 10 : 6) / view.scale, 0, Math.PI * 2); x.fill();
+      }
+    } else if (g.type === 'a') {
+      const rad = g.angle * Math.PI / 180;
+      const len = Math.max(c.width, c.height) * 2;
+      const dx = Math.cos(rad) * len;
+      const dy = Math.sin(rad) * len;
+
+      x.moveTo(g.x - dx, g.y - dy);
+      x.lineTo(g.x + dx, g.y + dy);
+      x.stroke();
+
+      if (tool === 'guides') {
+        // Uchwyt środkowy
+        x.beginPath(); x.arc(g.x, g.y, (isMobileMode ? 10 : 6) / view.scale, 0, Math.PI * 2); x.fill();
+        // Uchwyt kąta
+        const hx = g.x + Math.cos(rad) * 60;
+        const hy = g.y + Math.sin(rad) * 60;
+        x.fillStyle = '#ff0077';
+        x.beginPath(); x.arc(hx, hy, (isMobileMode ? 12 : 7) / view.scale, 0, Math.PI * 2); x.fill();
+      }
+    }
+  });
+  x.restore();
+}
+
+function renderShape(s, chosen) {
+  if (!L(s.layer)?.on || !s.pts.length) return;
+  x.save();
+  x.strokeStyle = s.stroke; 
+  x.fillStyle = hexToRgba(s.fc, s.fillOpacity ?? 0.5);
+  x.lineWidth = s.sw;
+  x.setLineDash(chosen && tool === 'select' ? [6, 4] : []);
+  x.beginPath();
+
+  s.pts.forEach((pt, i) => {
+    if (i === 0) x.moveTo(pt.x, pt.y);
+    else x.lineTo(pt.x, pt.y);
+  });
+  if (s.type !== 'line') x.closePath();
+
+  if (s.fill && s.type !== 'line') x.fill();
+  x.stroke(); 
+
+  if (chosen && tool === 'select') {
+    const h = getHandles(s);
+    const r = (isMobileMode ? 8 : 5) / view.scale;
+    x.fillStyle = '#007acc';
+    x.strokeStyle = '#ffffff';
+    x.lineWidth = 1.5 / view.scale;
+    x.setLineDash([]);
+    for (let k in h) {
+      x.beginPath();
+      x.arc(h[k].x, h[k].y, r, 0, Math.PI * 2);
+      x.fill();
+      x.stroke();
+    }
+  }
+
+  if (chosen && tool === 'nodes') {
+    const r = (isMobileMode ? 9 : 6) / view.scale;
+    x.setLineDash([]);
+    x.strokeStyle = '#ff336688';
+    x.lineWidth = Math.max(1, s.sw) + 2 / view.scale;
+    x.stroke();
+
+    s.pts.forEach(pt => {
+      x.fillStyle = '#ff3366';
+      x.strokeStyle = '#ffffff';
+      x.lineWidth = 1.5 / view.scale;
+      x.beginPath();
+      x.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      x.fill();
+      x.stroke();
+    });
+  }
+
+  x.restore();
+}
+
+function processAndRenderImmediate() {
+  x.clearRect(0, 0, c.width, c.height);
+
+  if (state.showPhoto && imgProcCanvas) {
+    const procImg = getProcessedImage();
+    if (procImg) {
+      x.save();
+      x.drawImage(procImg, 0, 0, c.width, c.height);
+      x.restore();
+    }
+  }
+
+  renderGuides();
+
+  // Rysowanie kształtów
+  sh.forEach(s => renderShape(s, s.id === sel));
+
+  if (isDrawingShape && tempShapeData) {
+    const previewPts = generateShapePoints(tempShapeData.type, tempShapeData.x, tempShapeData.y, tempShapeData.w, tempShapeData.h);
+    const z = {
+      pts: previewPts, type: tempShapeData.type, id: -1, layer: activeLayer,
+      stroke: document.querySelector('.stroke-color-target').value,
+      fc: document.querySelector('.fill-color-target').value,
+      fill: document.querySelector('.fill-check-target').checked,
+      fillOpacity: +document.querySelector('.fill-opacity-target').value / 100,
+      sw: +document.querySelector('.stroke-width-target').value
+    };
+    renderShape(z, false);
+  }
+
+  if (lassoPoints.length > 0) {
+    x.save(); x.strokeStyle = '#007acc'; x.lineWidth = 2 / view.scale; x.setLineDash([4 / view.scale, 4 / view.scale]); x.beginPath();
+    lassoPoints.forEach((pt, i) => { i === 0 ? x.moveTo(pt.x, pt.y) : x.lineTo(pt.x, pt.y); });
+    if (tempLassoCursor) x.lineTo(tempLassoCursor.x, tempLassoCursor.y);
+    x.stroke();
+    lassoPoints.forEach((pt, i) => {
+      x.fillStyle = i === 0 ? '#28a745' : '#ffffff'; x.beginPath(); x.arc(pt.x, pt.y, (i === 0 ? 8 : 5) / view.scale, 0, Math.PI * 2); x.fill();
+    });
+    x.restore();
+  }
+}
+
+document.querySelectorAll('.btn-add-layer').forEach(b => b.onclick = () => { pushHistory(); const id = nextL++; layers.push({id, name: 'Warstwa ' + id, on: true}); activeLayer = id; sel = null; layersUI(); requestRender(); });
+document.querySelectorAll('.btn-del-layer').forEach(b => b.onclick = () => { if (layers.length > 1) { pushHistory(); sh = sh.filter(s => s.layer !== activeLayer); const i = layers.findIndex(l => l.id === activeLayer); layers.splice(i, 1); activeLayer = layers[Math.max(0, i - 1)].id; sel = null; layersUI(); requestRender(); } });
+document.querySelectorAll('.btn-delete-sel').forEach(b => b.onclick = () => { if (sel !== null) { pushHistory(); sh = sh.filter(s => s.id !== sel); sel = null; closeDrawers(); requestRender(); } });
+
+function layersUI() {
+  document.querySelectorAll('.layers-list-target').forEach(b => {
+    b.innerHTML = '';
+    [...layers].reverse().forEach(l => {
+      const d = document.createElement('div');
+      d.className = 'layer-item' + (l.id === activeLayer ? ' active' : '');
+      d.innerHTML = `<span>${l.name}</span><button class="btn-icon" style="width:28px;height:28px">${l.on ? '👁' : '🚫'}</button>`;
+      d.onclick = () => { activeLayer = l.id; layersUI(); };
+      d.querySelector('button').onclick = e => { e.stopPropagation(); l.on = !l.on; layersUI(); processAndRenderImmediate(); };
+      b.appendChild(d);
+    });
+  });
+}
+
+// ZAPIS I WCZYTYWANIE PROJEKTU JSON
+function exportJSON() {
+  const projectData = {
+    version: '2.3.0',
+    canvasWidth: c.width,
+    canvasHeight: c.height,
+    shapes: sh,
+    layers: layers,
+    activeLayer: activeLayer,
+    guides: guides,
+    nextS: nextS,
+    nextL: nextL,
+    nextG: nextG
+  };
+  const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'projekt-studio-brył.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = event => {
+    try {
+      const data = JSON.parse(event.target.result);
+      pushHistory();
+      if (data.canvasWidth && data.canvasHeight) {
+        c.width = data.canvasWidth;
+        c.height = data.canvasHeight;
+      }
+      sh = data.shapes || [];
+      layers = data.layers || [{id: 1, name: 'Warstwa 1', on: true}];
+      activeLayer = data.activeLayer || 1;
+      guides = data.guides || [];
+      nextS = data.nextS || (sh.length ? Math.max(...sh.map(s => s.id)) + 1 : 1);
+      nextL = data.nextL || (layers.length ? Math.max(...layers.map(l => l.id)) + 1 : 1);
+      nextG = data.nextG || (guides.length ? Math.max(...guides.map(g => g.id)) + 1 : 1);
+      sel = null;
+      document.getElementById('emptyMsg').style.display = 'none';
+      closeDrawers();
+      autoFitAndCenter();
+    } catch (err) {
+      alert('Błąd podczas wczytywania pliku JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.querySelectorAll('.btn-export-json').forEach(b => b.onclick = exportJSON);
+document.getElementById('jsonInput').onchange = importJSON;
+document.getElementById('jsonInputMobile').onchange = importJSON;
+
+function exportPNG() {
+  const a = document.createElement('a'); a.download = 'studio-rysunku.png'; a.href = c.toDataURL('image/png'); a.click();
+}
+document.getElementById('btnSave').onclick = exportPNG;
+
+updateModeUI();
+</script>
+</body>
+</html>
