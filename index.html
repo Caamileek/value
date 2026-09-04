@@ -66,6 +66,20 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
 .order-btns { display: flex; gap: 6px; margin-top: 6px; }
 .btn-group-row { display: flex; gap: 6px; }
 .grid-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 11px; margin-top: 4px; }
+
+/* Klasa zmniejszająca drawer do samego suwaka podczas przeciągania */
+body.mode-mobile .drawer.is-sliding {
+  max-height: 90px !important;
+  background: rgba(34, 34, 34, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+body.mode-mobile .drawer.is-sliding .drawer-header,
+body.mode-mobile .drawer.is-sliding .grid-tools,
+body.mode-mobile .drawer.is-sliding .btn-group-row,
+body.mode-mobile .drawer.is-sliding .color-picker-row {
+  display: none !important;
+}
 </style>
 </head>
 <body class="mode-pc">
@@ -1461,6 +1475,19 @@ function exportPNG() {
 document.getElementById('btnSave').onclick = exportPNG;
 
 updateModeUI();
+
+// Automatyczne zwężanie drawera podczas używania jakiegokolwiek suwaka
+document.querySelectorAll('.drawer input[type=range]').forEach(slider => {
+  const drawer = slider.closest('.drawer');
+  
+  const startSlide = () => drawer?.classList.add('is-sliding');
+  const endSlide = () => drawer?.classList.remove('is-sliding');
+
+  slider.addEventListener('touchstart', startSlide);
+  slider.addEventListener('touchend', endSlide);
+  slider.addEventListener('mousedown', startSlide);
+  slider.addEventListener('mouseup', endSlide);
+});
 </script>
 </body>
 </html>
