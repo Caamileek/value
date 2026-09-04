@@ -20,7 +20,7 @@ button,label,input,select{font:inherit;color:inherit}
 
 .app-container{flex:1;display:flex;position:relative;overflow:hidden;z-index:1}
 
-.workspace{flex:1;position:relative;overflow:hidden;background:#0d0d0d;touch-action:none;display:flex;align-items:center;justify-style:center;cursor:default}
+.workspace{flex:1;position:relative;overflow:hidden;background:#0d0d0d;touch-action:none;display:flex;align-items:center;justify-content:center;cursor:default}
 .workspace.is-panning{cursor:grab}
 .workspace.is-panning:active{cursor:grabbing}
 canvas{display:block;box-shadow:0 0 25px #0009;background:#1a1a1a;transform-origin:0 0;position:absolute;left:0;top:0;will-change:transform}
@@ -65,6 +65,7 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
 .layer-item.active { border-color: #007acc; background: #007acc15; }
 .order-btns { display: flex; gap: 6px; margin-top: 6px; }
 .btn-group-row { display: flex; gap: 6px; }
+.grid-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 11px; margin-top: 4px; }
 </style>
 </head>
 <body class="mode-pc">
@@ -87,6 +88,7 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
     <button class="tool-btn" data-tool="nodes" title="Tryb Plasteliny">📍</button>
     <button class="tool-btn" data-tool="pan" title="Przesuń widok">✋</button>
     <button class="tool-btn" data-tool="lasso" title="Lasso">🧲</button>
+    <button class="tool-btn" data-tool="gridShape" title="Siatka z Przekątnymi">▦</button>
     <button class="tool-btn" data-tool="rect" title="Prostokąt">▭</button>
     <button class="tool-btn" data-tool="square" title="Kwadrat">□</button>
     <button class="tool-btn" data-tool="ellipse" title="Elipsa">⬭</button>
@@ -139,7 +141,22 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
       </div>
       <div class="control-row">
         <label><span>Przezroczystość wypełnienia</span><b class="opacity-val">50%</b></label>
-        <input class="fill-opacity-target" type="range" min="10" max="100" value="50">
+        <input class="fill-opacity-target" type="range" min="0" max="100" value="50">
+      </div>
+
+      <!-- KONFIGURACJA SIATKI -->
+      <div style="border-top: 1px solid #333; margin-top: 8px; padding-top: 8px;">
+        <span style="font-size:11px; color:#007acc; font-weight:bold;">OPCJE SIATKI (DLA ZAZNACZONEJ):</span>
+        <div class="control-row" style="margin-top:6px">
+          <label><span>Przezroczystość linii siatki</span><b class="grid-opacity-val">100%</b></label>
+          <input class="grid-opacity-target" type="range" min="0" max="100" value="100">
+        </div>
+        <div class="grid-opt-grid">
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="mainAxes" type="checkbox" checked> Osie gł.</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="mainDiags" type="checkbox" checked> Skosy gł.</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="subAxes" type="checkbox" checked> Osie małe</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="subDiags" type="checkbox" checked> Skosy małe</label>
+        </div>
       </div>
       
       <div class="order-btns">
@@ -233,6 +250,7 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
         <div class="tool-tile" data-tool="nodes"><span class="icon">📍</span>Plastelina</div>
         <div class="tool-tile" data-tool="pan"><span class="icon">✋</span>Przesuń</div>
         <div class="tool-tile" data-tool="lasso"><span class="icon">🧲</span>Lasso</div>
+        <div class="tool-tile" data-tool="gridShape"><span class="icon">▦</span>Siatka</div>
         <div class="tool-tile" data-tool="rect"><span class="icon">▭</span>Prostokąt</div>
         <div class="tool-tile" data-tool="square"><span class="icon">□</span>Kwadrat</div>
         <div class="tool-tile" data-tool="ellipse"><span class="icon">⬭</span>Elipsa</div>
@@ -267,7 +285,22 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
       </div>
       <div class="control-row">
         <label><span>Przezroczystość wypełnienia</span><b class="opacity-val">50%</b></label>
-        <input class="fill-opacity-target" type="range" min="10" max="100" value="50">
+        <input class="fill-opacity-target" type="range" min="0" max="100" value="50">
+      </div>
+
+      <!-- KONFIGURACJA SIATKI DLA MOBILE -->
+      <div style="border-top: 1px solid #333; margin-top: 8px; padding-top: 8px;">
+        <span style="font-size:11px; color:#007acc; font-weight:bold;">OPCJE SIATKI:</span>
+        <div class="control-row" style="margin-top:6px">
+          <label><span>Przezroczystość linii siatki</span><b class="grid-opacity-val">100%</b></label>
+          <input class="grid-opacity-target" type="range" min="0" max="100" value="100">
+        </div>
+        <div class="grid-opt-grid">
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="mainAxes" type="checkbox" checked> Osie gł.</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="mainDiags" type="checkbox" checked> Skosy gł.</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="subAxes" type="checkbox" checked> Osie małe</label>
+          <label class="checkbox-row"><input class="grid-opt-target" data-opt="subDiags" type="checkbox" checked> Skosy małe</label>
+        </div>
       </div>
 
       <div class="order-btns">
@@ -378,6 +411,7 @@ function undo() {
   guides = lastState.guides || [];
   sel = null;
   layersUI();
+  updateGridCheckboxesUI();
   requestRender();
 }
 
@@ -487,7 +521,7 @@ function syncInput(selector, event, callback) {
     el.addEventListener(event, e => {
       callback(e);
       document.querySelectorAll(selector).forEach(other => {
-        if (other !== el) {
+        if (other !== el && other.dataset?.opt === el.dataset?.opt) {
           if (other.type === 'checkbox') other.checked = el.checked;
           else other.value = el.value;
         }
@@ -498,6 +532,21 @@ function syncInput(selector, event, callback) {
 
 function updateTextDisplays(className, text) {
   document.querySelectorAll('.' + className).forEach(el => el.textContent = text);
+}
+
+function updateGridCheckboxesUI() {
+  const s = S();
+  const opts = (s && s.gridOpts) ? s.gridOpts : { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true };
+  document.querySelectorAll('.grid-opt-target').forEach(el => {
+    const key = el.dataset.opt;
+    if (key && opts[key] !== undefined) {
+      el.checked = opts[key];
+    }
+  });
+
+  const gridOpVal = (s && s.gridOpacity !== undefined) ? Math.round(s.gridOpacity * 100) : 100;
+  document.querySelectorAll('.grid-opacity-target').forEach(el => el.value = gridOpVal);
+  updateTextDisplays('grid-opacity-val', gridOpVal + '%');
 }
 
 syncInput('.file-input-target', 'change', e => {
@@ -559,13 +608,36 @@ syncInput('.fill-opacity-target', 'input', e => { updateTextDisplays('opacity-va
 syncInput('.puzzle-target', 'change', e => { state.showPuzzle = e.target.checked; markImageDirty(); });
 syncInput('.invert-target', 'change', e => { state.invert = e.target.checked; markImageDirty(); });
 
+// PRZEZROCZYSTOŚĆ SIATKI
+syncInput('.grid-opacity-target', 'input', e => {
+  updateTextDisplays('grid-opacity-val', e.target.value + '%');
+  const s = S();
+  if (s && s.type === 'gridShape') {
+    pushHistory();
+    s.gridOpacity = +e.target.value / 100;
+    requestRender();
+  }
+});
+
+// DEDYKOWANA OBSŁUGA DLA OPCJI SIATKI
+syncInput('.grid-opt-target', 'change', e => {
+  const s = S();
+  if (s && s.type === 'gridShape') {
+    pushHistory();
+    if (!s.gridOpts) s.gridOpts = { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true };
+    const optKey = e.target.dataset.opt;
+    if (optKey) s.gridOpts[optKey] = e.target.checked;
+    requestRender();
+  }
+});
+
 // DODAWANIE PROWADNIC
 document.querySelectorAll('.btn-add-guide-v').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'v', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
 document.querySelectorAll('.btn-add-guide-h').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'h', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
 document.querySelectorAll('.btn-add-guide-a').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'a', x: c.width / 2, y: c.height / 2, angle: 45 }); setTool('guides'); });
 document.querySelectorAll('.btn-clear-guides').forEach(b => b.onclick = () => { pushHistory(); guides = []; requestRender(); });
 
-// HIERARCHIA OBIEKTÓW (NA WIERZCH / NA SPÓD)
+// HIERARCHIA OBIEKTÓW
 document.querySelectorAll('.btn-move-up').forEach(b => b.onclick = () => {
   if (sel === null) return;
   const idx = sh.findIndex(s => s.id === sel);
@@ -654,7 +726,6 @@ function getProcessedImage() {
       }
     }
   } else {
-    // Normalne przetwarzanie kolorowe (jasność/kontrast/negatyw)
     for (let i = 0; i < data.length; i += 4) {
       let r = (data[i] - 128) * ct + 128 + b;
       let g = (data[i+1] - 128) * ct + 128 + b;
@@ -757,7 +828,7 @@ function generateShapePoints(type, x, y, w, h) {
     w = q * Math.sign(w || 1); h = q * Math.sign(h || 1);
   }
 
-  if (type === 'rect' || type === 'square') {
+  if (type === 'rect' || type === 'square' || type === 'gridShape') {
     pts.push({x, y}, {x: x+w/2, y}, {x: x+w, y}, {x: x+w, y: y+h/2}, {x: x+w, y: y+h}, {x: x+w/2, y: y+h}, {x, y: y+h}, {x, y: y+h/2});
   } else if (type === 'ellipse' || type === 'circle') {
     const cx = x + w/2, cy = y + h/2, rx = Math.abs(w/2), ry = Math.abs(h/2);
@@ -794,7 +865,6 @@ function hitTestGuide(p) {
     } else if (g.type === 'a') {
       const distCenter = Math.hypot(p.x - g.x, p.y - g.y);
       if (distCenter <= r) return { guide: g, handle: 'move' };
-      // Sprawdzanie uchwytu rotacji
       const rad = g.angle * Math.PI / 180;
       const hx = g.x + Math.cos(rad) * 60;
       const hy = g.y + Math.sin(rad) * 60;
@@ -826,7 +896,6 @@ workspace.onpointerdown = e => {
   if (activePointers.length > 1) return;
   const p = pointerPos(e);
 
-  // LOGIKA PROWADNIC
   if (tool === 'guides') {
     const gHit = hitTestGuide(p);
     if (gHit) {
@@ -838,7 +907,6 @@ workspace.onpointerdown = e => {
     return;
   }
 
-  // LOGIKA LASSA
   if (tool === 'lasso') {
     if (lassoPoints.length > 2 && Math.hypot(p.x - lassoPoints[0].x, p.y - lassoPoints[0].y) < 25 / view.scale) {
       pushHistory();
@@ -900,6 +968,7 @@ workspace.onpointerdown = e => {
     if (clickedId !== null) {
       sel = clickedId;
       layersUI();
+      updateGridCheckboxesUI();
       requestRender();
     }
     return;
@@ -927,11 +996,13 @@ workspace.onpointerdown = e => {
       startPos = p;
       tempShapeData = { pts: JSON.parse(JSON.stringify(S().pts)) };
       layersUI();
+      updateGridCheckboxesUI();
       requestRender();
       return;
     } else {
       sel = null;
       layersUI();
+      updateGridCheckboxesUI();
       requestRender();
       return;
     }
@@ -1079,9 +1150,11 @@ function addShape(type, x0, y0, w, h) {
   const swVal = +document.querySelector('.stroke-width-target').value;
 
   const s = {
-    id: nextS++, type, pts, stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, sw: swVal, layer: activeLayer
+    id: nextS++, type, pts, stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, sw: swVal, layer: activeLayer,
+    gridOpts: { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true },
+    gridOpacity: 1.0
   };
-  sh.push(s); sel = s.id; layersUI(); requestRender();
+  sh.push(s); sel = s.id; layersUI(); updateGridCheckboxesUI(); requestRender();
 }
 
 function addPolygonShape(pts) {
@@ -1094,7 +1167,7 @@ function addPolygonShape(pts) {
   const s = {
     id: nextS++, type: 'polygon', pts: [...pts], stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, sw: swVal, layer: activeLayer
   };
-  sh.push(s); sel = s.id; layersUI(); requestRender();
+  sh.push(s); sel = s.id; layersUI(); updateGridCheckboxesUI(); requestRender();
 }
 
 function hitTest(p) {
@@ -1141,9 +1214,7 @@ function renderGuides() {
       x.stroke();
 
       if (tool === 'guides') {
-        // Uchwyt środkowy
         x.beginPath(); x.arc(g.x, g.y, (isMobileMode ? 10 : 6) / view.scale, 0, Math.PI * 2); x.fill();
-        // Uchwyt kąta
         const hx = g.x + Math.cos(rad) * 60;
         const hy = g.y + Math.sin(rad) * 60;
         x.fillStyle = '#ff0077';
@@ -1172,6 +1243,80 @@ function renderShape(s, chosen) {
   if (s.fill && s.type !== 'line') x.fill();
   x.stroke(); 
 
+  // ZAawansowana SIATKA KONTROLOWANA CHECKBOXAMI ORAZ PRZEZROCZYSTOŚCIĄ
+  if (s.type === 'gridShape' && s.pts.length >= 8) {
+    const opts = s.gridOpts || { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true };
+    const gAlpha = s.gridOpacity !== undefined ? s.gridOpacity : 1.0;
+
+    x.save();
+    x.globalAlpha = gAlpha; // Ustawienie osobnej przezroczystości tylko dla linii wewnętrznych siatki
+
+    const p0 = s.pts[0], p1 = s.pts[1], p2 = s.pts[2], p3 = s.pts[3];
+    const p4 = s.pts[4], p5 = s.pts[5], p6 = s.pts[6], p7 = s.pts[7];
+    const center = { x: (p0.x + p4.x) / 2, y: (p0.y + p4.y) / 2 };
+
+    x.beginPath();
+
+    // 1. Główna pionowa i pozioma oś środkowa
+    if (opts.mainAxes) {
+      x.moveTo(p1.x, p1.y); x.lineTo(p5.x, p5.y);
+      x.moveTo(p7.x, p7.y); x.lineTo(p3.x, p3.y);
+    }
+
+    // Funkcja do rysowania kwadratu (osie/przekątne)
+    const drawSubCell = (a, b, c, d) => {
+      const midTop = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const midRight = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+      const midBottom = { x: (c.x + d.x) / 2, y: (c.y + d.y) / 2 };
+      const midLeft = { x: (d.x + a.x) / 2, y: (d.y + a.y) / 2 };
+      const subCenter = { x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 };
+
+      if (opts.subAxes) {
+        x.moveTo(midTop.x, midTop.y); x.lineTo(midBottom.x, midBottom.y);
+        x.moveTo(midLeft.x, midLeft.y); x.lineTo(midRight.x, midRight.y);
+      }
+
+      if (opts.subDiags) {
+        x.moveTo(a.x, a.y); x.lineTo(subCenter.x, subCenter.y);
+        x.moveTo(b.x, b.y); x.lineTo(midLeft.x, midLeft.y);
+
+        x.moveTo(b.x, b.y); x.lineTo(midRight.x, midRight.y);
+        x.moveTo(c.x, c.y); x.lineTo(subCenter.x, subCenter.y);
+
+        x.moveTo(subCenter.x, subCenter.y); x.lineTo(c.x, c.y);
+        x.moveTo(midRight.x, midRight.y); x.lineTo(d.x, d.y);
+
+        x.moveTo(midLeft.x, midLeft.y); x.lineTo(d.x, d.y);
+        x.moveTo(subCenter.x, subCenter.y); x.lineTo(a.x, a.y);
+      }
+    };
+
+    // 2. Główne przekątne dużego kwadratu
+    if (opts.mainDiags) {
+      x.moveTo(p0.x, p0.y); x.lineTo(center.x, center.y);
+      x.moveTo(p1.x, p1.y); x.lineTo(p7.x, p7.y);
+
+      x.moveTo(p1.x, p1.y); x.lineTo(p3.x, p3.y);
+      x.moveTo(p2.x, p2.y); x.lineTo(center.x, center.y);
+
+      x.moveTo(center.x, center.y); x.lineTo(p4.x, p4.y);
+      x.moveTo(p3.x, p3.y); x.lineTo(p5.x, p5.y);
+
+      x.moveTo(p7.x, p7.y); x.lineTo(p5.x, p5.y);
+      x.moveTo(center.x, center.y); x.lineTo(p6.x, p6.y);
+    }
+
+    // 3. Sub-linie w 4 małych kwadratach
+    drawSubCell(p0, p1, center, p7); // LT
+    drawSubCell(p1, p2, p3, center); // RT
+    drawSubCell(center, p3, p4, p5); // RB
+    drawSubCell(p7, center, p5, p6); // LB
+
+    x.stroke();
+    x.restore();
+  }
+
+  // Chwyty do skalowania i edycji węzłów
   if (chosen && tool === 'select') {
     const h = getHandles(s);
     const r = (isMobileMode ? 8 : 5) / view.scale;
@@ -1222,7 +1367,6 @@ function processAndRenderImmediate() {
 
   renderGuides();
 
-  // Rysowanie kształtów
   sh.forEach(s => renderShape(s, s.id === sel));
 
   if (isDrawingShape && tempShapeData) {
@@ -1233,7 +1377,9 @@ function processAndRenderImmediate() {
       fc: document.querySelector('.fill-color-target').value,
       fill: document.querySelector('.fill-check-target').checked,
       fillOpacity: +document.querySelector('.fill-opacity-target').value / 100,
-      sw: +document.querySelector('.stroke-width-target').value
+      sw: +document.querySelector('.stroke-width-target').value,
+      gridOpts: { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true },
+      gridOpacity: +document.querySelector('.grid-opacity-target').value / 100
     };
     renderShape(z, false);
   }
@@ -1268,10 +1414,9 @@ function layersUI() {
   });
 }
 
-// ZAPIS I WCZYTYWANIE PROJEKTU JSON
 function exportJSON() {
   const projectData = {
-    version: '2.3.0',
+    version: '2.4.0',
     canvasWidth: c.width,
     canvasHeight: c.height,
     shapes: sh,
