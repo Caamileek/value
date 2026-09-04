@@ -11,7 +11,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#141414;col
 body{height:100dvh;display:flex;flex-direction:column;position:relative}
 button,label,input,select{font:inherit;color:inherit}
 
-.top-bar{height:44px;background:#222;border-bottom:1px solid #333;display:flex;align-items:center;justify-style:space-between;padding:0 12px;z-index:100;flex-shrink:0}
+.top-bar{height:44px;background:#222;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:100;flex-shrink:0}
 .top-title{font-weight:bold;font-size:14px;color:#007acc;display:flex;align-items:center;gap:6px}
 .top-actions{display:flex;gap:6px;align-items:center}
 .btn-icon{width:34px;height:34px;border-radius:6px;border:none;background:#2d2d2d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
@@ -144,7 +144,6 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
         <input class="fill-opacity-target" type="range" min="0" max="100" value="50">
       </div>
 
-      <!-- KONFIGURACJA SIATKI -->
       <div style="border-top: 1px solid #333; margin-top: 8px; padding-top: 8px;">
         <span style="font-size:11px; color:#007acc; font-weight:bold;">OPCJE SIATKI (DLA ZAZNACZONEJ):</span>
         <div class="control-row" style="margin-top:6px">
@@ -218,7 +217,6 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
     </div>
   </div>
 
-  <!-- MOBILNE SZUFLADY MENU -->
   <div class="drawer" id="drawer-file">
     <div class="drawer-header"><span>Plik & Projekt</span><button class="btn-icon" onclick="closeDrawers()">✕</button></div>
     <div class="drawer-body">
@@ -288,7 +286,6 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
         <input class="fill-opacity-target" type="range" min="0" max="100" value="50">
       </div>
 
-      <!-- KONFIGURACJA SIATKI DLA MOBILE -->
       <div style="border-top: 1px solid #333; margin-top: 8px; padding-top: 8px;">
         <span style="font-size:11px; color:#007acc; font-weight:bold;">OPCJE SIATKI:</span>
         <div class="control-row" style="margin-top:6px">
@@ -376,12 +373,10 @@ let activeHandle = null, activeNodeIndex = null;
 let nextS = 1, nextL = 2;
 let lassoPoints = [], tempLassoCursor = null;
 
-// Prowadnice / Siatka
-let guides = []; // { id, type: 'v'|'h'|'a', x, y, angle }
+let guides = [];
 let activeGuide = null, activeGuideHandle = null;
 let nextG = 1;
 
-// Historia Undo
 let historyStack = [];
 const MAX_UNDO = 25;
 
@@ -551,8 +546,10 @@ function updateGridCheckboxesUI() {
 
 syncInput('.file-input-target', 'change', e => {
   const f = e.target.files?.[0]; if (!f) return;
+  const objectUrl = URL.createObjectURL(f);
   const z = new Image();
   z.onload = () => {
+    URL.revokeObjectURL(objectUrl); // Zwalnianie zasobów
     img = z;
     const max = 2048, scale = Math.min(1, max / Math.max(z.naturalWidth, z.naturalHeight));
     imgProcCanvas = document.createElement('canvas');
@@ -568,7 +565,7 @@ syncInput('.file-input-target', 'change', e => {
     closeDrawers();
     autoFitAndCenter();
   };
-  z.src = URL.createObjectURL(f);
+  z.src = objectUrl;
 });
 
 document.querySelectorAll('.btn-close-img').forEach(b => b.onclick = () => { 
@@ -608,7 +605,6 @@ syncInput('.fill-opacity-target', 'input', e => { updateTextDisplays('opacity-va
 syncInput('.puzzle-target', 'change', e => { state.showPuzzle = e.target.checked; markImageDirty(); });
 syncInput('.invert-target', 'change', e => { state.invert = e.target.checked; markImageDirty(); });
 
-// PRZEZROCZYSTOŚĆ SIATKI
 syncInput('.grid-opacity-target', 'input', e => {
   updateTextDisplays('grid-opacity-val', e.target.value + '%');
   const s = S();
@@ -619,7 +615,6 @@ syncInput('.grid-opacity-target', 'input', e => {
   }
 });
 
-// DEDYKOWANA OBSŁUGA DLA OPCJI SIATKI
 syncInput('.grid-opt-target', 'change', e => {
   const s = S();
   if (s && s.type === 'gridShape') {
@@ -631,13 +626,11 @@ syncInput('.grid-opt-target', 'change', e => {
   }
 });
 
-// DODAWANIE PROWADNIC
 document.querySelectorAll('.btn-add-guide-v').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'v', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
 document.querySelectorAll('.btn-add-guide-h').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'h', x: c.width / 2, y: c.height / 2, angle: 0 }); setTool('guides'); });
 document.querySelectorAll('.btn-add-guide-a').forEach(b => b.onclick = () => { pushHistory(); guides.push({ id: nextG++, type: 'a', x: c.width / 2, y: c.height / 2, angle: 45 }); setTool('guides'); });
 document.querySelectorAll('.btn-clear-guides').forEach(b => b.onclick = () => { pushHistory(); guides = []; requestRender(); });
 
-// HIERARCHIA OBIEKTÓW
 document.querySelectorAll('.btn-move-up').forEach(b => b.onclick = () => {
   if (sel === null) return;
   const idx = sh.findIndex(s => s.id === sel);
@@ -1243,13 +1236,12 @@ function renderShape(s, chosen) {
   if (s.fill && s.type !== 'line') x.fill();
   x.stroke(); 
 
-  // ZAawansowana SIATKA KONTROLOWANA CHECKBOXAMI ORAZ PRZEZROCZYSTOŚCIĄ
   if (s.type === 'gridShape' && s.pts.length >= 8) {
     const opts = s.gridOpts || { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true };
     const gAlpha = s.gridOpacity !== undefined ? s.gridOpacity : 1.0;
 
     x.save();
-    x.globalAlpha = gAlpha; // Ustawienie osobnej przezroczystości tylko dla linii wewnętrznych siatki
+    x.globalAlpha = gAlpha;
 
     const p0 = s.pts[0], p1 = s.pts[1], p2 = s.pts[2], p3 = s.pts[3];
     const p4 = s.pts[4], p5 = s.pts[5], p6 = s.pts[6], p7 = s.pts[7];
@@ -1257,13 +1249,11 @@ function renderShape(s, chosen) {
 
     x.beginPath();
 
-    // 1. Główna pionowa i pozioma oś środkowa
     if (opts.mainAxes) {
       x.moveTo(p1.x, p1.y); x.lineTo(p5.x, p5.y);
       x.moveTo(p7.x, p7.y); x.lineTo(p3.x, p3.y);
     }
 
-    // Funkcja do rysowania kwadratu (osie/przekątne)
     const drawSubCell = (a, b, c, d) => {
       const midTop = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       const midRight = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
@@ -1291,7 +1281,6 @@ function renderShape(s, chosen) {
       }
     };
 
-    // 2. Główne przekątne dużego kwadratu
     if (opts.mainDiags) {
       x.moveTo(p0.x, p0.y); x.lineTo(center.x, center.y);
       x.moveTo(p1.x, p1.y); x.lineTo(p7.x, p7.y);
@@ -1306,17 +1295,15 @@ function renderShape(s, chosen) {
       x.moveTo(center.x, center.y); x.lineTo(p6.x, p6.y);
     }
 
-    // 3. Sub-linie w 4 małych kwadratach
-    drawSubCell(p0, p1, center, p7); // LT
-    drawSubCell(p1, p2, p3, center); // RT
-    drawSubCell(center, p3, p4, p5); // RB
-    drawSubCell(p7, center, p5, p6); // LB
+    drawSubCell(p0, p1, center, p7);
+    drawSubCell(p1, p2, p3, center);
+    drawSubCell(center, p3, p4, p5);
+    drawSubCell(p7, center, p5, p6);
 
     x.stroke();
     x.restore();
   }
 
-  // Chwyty do skalowania i edycji węzłów
   if (chosen && tool === 'select') {
     const h = getHandles(s);
     const r = (isMobileMode ? 8 : 5) / view.scale;
