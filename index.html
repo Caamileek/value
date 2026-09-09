@@ -67,7 +67,6 @@ body.mode-mobile .tool-tile.active { background: #007acc22; border-color: #007ac
 .btn-group-row { display: flex; gap: 6px; }
 .grid-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 11px; margin-top: 4px; }
 
-/* Klasa zmniejszająca drawer do samego suwaka podczas przeciągania */
 body.mode-mobile .drawer.is-sliding {
   max-height: 90px !important;
   background: rgba(34, 34, 34, 0.85);
@@ -139,7 +138,14 @@ body.mode-mobile .drawer.is-sliding .color-picker-row {
     </div>
 
     <div class="panel-section">
-      <div class="panel-title">Edycja, Styl & Hierarchia</div>
+      <div class="panel-title">Edycja, Styl & Łuki</div>
+      
+      <div class="control-row">
+        <label><span>Zaokrąglenie / Łuki (Etap 2)</span><b class="smooth-val">0%</b></label>
+        <input class="smooth-target" type="range" min="0" max="100" value="0">
+      </div>
+      <button class="btn-main secondary btn-smooth-toggle" style="margin-bottom:12px">➰ Szkic / Łuk (0% / 100%)</button>
+
       <div class="color-picker-row">
         <span>Kolor obrysu</span>
         <input class="stroke-color-target" type="color" value="#ffffff" style="width:32px;height:32px;border:none;background:none;cursor:pointer">
@@ -276,6 +282,12 @@ body.mode-mobile .drawer.is-sliding .color-picker-row {
         <div class="tool-tile" data-tool="guides"><span class="icon">📏</span>Siatka</div>
       </div>
 
+      <div class="control-row" style="margin-top:10px">
+        <label><span>Zaokrąglenie / Łuki (Etap 2)</span><b class="smooth-val">0%</b></label>
+        <input class="smooth-target" type="range" min="0" max="100" value="0">
+      </div>
+      <button class="btn-main secondary btn-smooth-toggle" style="margin-bottom:8px">➰ Szkic / Łuk (0% / 100%)</button>
+
       <div style="border-top: 1px solid #333; padding-top: 8px; margin-top: 4px;">
         <span style="font-size:11px; color:#007acc; font-weight:bold;">DODAJ PROWADNICĘ:</span>
         <div class="btn-group-row" style="margin-top:4px">
@@ -411,6 +423,24 @@ let longPressTimer = null, lastTapTime = 0, lastTapNode = null;
 
 const L = id => layers.find(a => a.id === id);
 const S = () => sh.find(a => a.id === sel);
+
+// Algorytm Ramer-Douglas-Peucker do usuwania szumu z lassa
+function simplifyPoints(pts, epsilon) {
+  if (pts.length <= 2) return pts;
+  let dmax = 0, index = 0;
+  const end = pts.length - 1;
+  for (let i = 1; i < end; i++) {
+    const d = distToSegment(pts[i], pts[0], pts[end]).dist;
+    if (d > dmax) { index = i; dmax = d; }
+  }
+  if (dmax > epsilon) {
+    const rec1 = simplifyPoints(pts.slice(0, index + 1), epsilon);
+    const rec2 = simplifyPoints(pts.slice(index), epsilon);
+    return rec1.slice(0, rec1.length - 1).concat(rec2);
+  } else {
+    return [pts[0], pts[end]];
+  }
+}
 
 function pushHistory() {
   if (historyStack.length >= MAX_UNDO) historyStack.shift();
@@ -572,6 +602,10 @@ function updateShapeUI() {
   const opacityVal = s ? Math.round((s.opacity ?? 1.0) * 100) : 100;
   document.querySelectorAll('.shape-opacity-target').forEach(el => el.value = opacityVal);
   updateTextDisplays('shape-opacity-val', opacityVal + '%');
+
+  const smoothVal = s ? Math.round((s.smoothness ?? 0) * 100) : 0;
+  document.querySelectorAll('.smooth-target').forEach(el => el.value = smoothVal);
+  updateTextDisplays('smooth-val', smoothVal + '%');
 }
 
 syncInput('.file-input-target', 'change', e => {
@@ -633,6 +667,18 @@ syncInput('.fill-color-target', 'input', e => { const s = S(); if(s){ pushHistor
 syncInput('.fill-check-target', 'change', e => { const s = S(); if(s){ pushHistory(); s.fill = e.target.checked; requestRender();} });
 syncInput('.fill-opacity-target', 'input', e => { updateTextDisplays('opacity-val', e.target.value + '%'); const s = S(); if(s){ pushHistory(); s.fillOpacity = e.target.value / 100; requestRender();} });
 syncInput('.shape-opacity-target', 'input', e => { updateTextDisplays('shape-opacity-val', e.target.value + '%'); const s = S(); if(s){ pushHistory(); s.opacity = e.target.value / 100; requestRender();} });
+
+syncInput('.smooth-target', 'input', e => {
+  const val = +e.target.value / 100;
+  updateTextDisplays('smooth-val', e.target.value + '%');
+  const s = S();
+  if (s) {
+    pushHistory();
+    s.smoothness = val;
+    requestRender();
+  }
+});
+
 syncInput('.puzzle-target', 'change', e => { state.showPuzzle = e.target.checked; markImageDirty(); });
 syncInput('.invert-target', 'change', e => { state.invert = e.target.checked; markImageDirty(); });
 
@@ -682,6 +728,19 @@ document.querySelectorAll('.btn-move-down').forEach(b => b.onclick = () => {
     sh.splice(idx - 1, 0, item);
     requestRender();
   }
+});
+
+document.querySelectorAll('.btn-smooth-toggle').forEach(b => {
+  b.onclick = () => {
+    const s = S();
+    if (s && s.pts.length > 2) {
+      pushHistory();
+      s.smoothness = (s.smoothness || 0) > 0.5 ? 0 : 1;
+      updateShapeUI();
+      closeDrawers();
+      requestRender();
+    }
+  };
 });
 
 function setTool(t) {
@@ -934,7 +993,9 @@ workspace.onpointerdown = e => {
   if (tool === 'lasso') {
     if (lassoPoints.length > 2 && Math.hypot(p.x - lassoPoints[0].x, p.y - lassoPoints[0].y) < 25 / view.scale) {
       pushHistory();
-      addPolygonShape(lassoPoints);
+      // Czyszczenie nadmiaru punktów dla stworzenia czytelnej, kanciastej bazy (Etap 1)
+      const cleanPts = simplifyPoints(lassoPoints, 6 / view.scale);
+      addPolygonShape(cleanPts);
       lassoPoints = [];
       setTool('select');
       return;
@@ -1179,6 +1240,7 @@ function addShape(type, x0, y0, w, h) {
 
   const s = {
     id: nextS++, type, pts, stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, opacity: shapeOp, sw: swVal, layer: activeLayer,
+    smoothness: 0,
     gridOpts: { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true },
     gridOpacity: 1.0
   };
@@ -1194,7 +1256,17 @@ function addPolygonShape(pts) {
   const swVal = +document.querySelector('.stroke-width-target').value;
 
   const s = {
-    id: nextS++, type: 'polygon', pts: [...pts], stroke: strokeVal, fc: fillVal, fill: fillCheck, fillOpacity: fillOp, opacity: shapeOp, sw: swVal, layer: activeLayer
+    id: nextS++, 
+    type: 'polygon', 
+    pts: [...pts], 
+    smoothness: 0, // Domyślnie Etap 1: ostre krawędzie
+    stroke: strokeVal, 
+    fc: fillVal, 
+    fill: fillCheck, 
+    fillOpacity: fillOp, 
+    opacity: shapeOp, 
+    sw: swVal, 
+    layer: activeLayer
   };
   sh.push(s); sel = s.id; layersUI(); updateGridCheckboxesUI(); updateShapeUI(); requestRender();
 }
@@ -1264,11 +1336,33 @@ function renderShape(s, chosen) {
   x.setLineDash(chosen && tool === 'select' ? [6, 4] : []);
   x.beginPath();
 
-  s.pts.forEach((pt, i) => {
-    if (i === 0) x.moveTo(pt.x, pt.y);
-    else x.lineTo(pt.x, pt.y);
-  });
-  if (s.type !== 'line') x.closePath();
+  const sm = s.smoothness || 0;
+
+  if (sm > 0 && s.pts.length > 2) {
+    // Dynamiczne przeliczanie z kanciastego na gładki łuk (Etap 1 -> Etap 2)
+    x.moveTo(s.pts[0].x, s.pts[0].y);
+    const len = s.pts.length;
+    for (let i = 0; i < len; i++) {
+      const p0 = s.pts[(i - 1 + len) % len];
+      const p1 = s.pts[i];
+      const p2 = s.pts[(i + 1) % len];
+      const p3 = s.pts[(i + 2) % len];
+
+      const cp1x = p1.x + ((p2.x - p0.x) / 6) * sm;
+      const cp1y = p1.y + ((p2.y - p0.y) / 6) * sm;
+      const cp2x = p2.x - ((p3.x - p1.x) / 6) * sm;
+      const cp2y = p2.y - ((p3.y - p1.y) / 6) * sm;
+
+      x.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+  } else {
+    // Rysowanie kanciastego szkicu (Etap 1)
+    s.pts.forEach((pt, i) => {
+      if (i === 0) x.moveTo(pt.x, pt.y);
+      else x.lineTo(pt.x, pt.y);
+    });
+    if (s.type !== 'line') x.closePath();
+  }
 
   if (s.fill && s.type !== 'line') x.fill();
   x.stroke(); 
@@ -1403,6 +1497,7 @@ function processAndRenderImmediate() {
       fillOpacity: +document.querySelector('.fill-opacity-target').value / 100,
       opacity: +document.querySelector('.shape-opacity-target').value / 100,
       sw: +document.querySelector('.stroke-width-target').value,
+      smoothness: 0,
       gridOpts: { mainAxes: true, mainDiags: true, subAxes: true, subDiags: true },
       gridOpacity: +document.querySelector('.grid-opacity-target').value / 100
     };
@@ -1441,7 +1536,7 @@ function layersUI() {
 
 function exportJSON() {
   const projectData = {
-    version: '2.4.0',
+    version: '2.5.0',
     canvasWidth: c.width,
     canvasHeight: c.height,
     shapes: sh,
@@ -1500,7 +1595,6 @@ document.getElementById('btnSave').onclick = exportPNG;
 
 updateModeUI();
 
-// Automatyczne zwężanie drawera podczas używania jakiegokolwiek suwaka
 document.querySelectorAll('.drawer input[type=range]').forEach(slider => {
   const drawer = slider.closest('.drawer');
   
